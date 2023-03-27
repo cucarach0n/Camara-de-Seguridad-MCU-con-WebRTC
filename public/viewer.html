@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="videos">
+        <!--<video width="400px" height="400px" id="video" autoplay controls></video>-->
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+        var socket = io.connect(window.location.origin);
+        var peerConnectionServers = {};
+        const config = {
+            iceServers: [
+                {
+                    "urls": "stun:stun.l.google.com:19302",
+                }
+                /*{ 
+                    "urls": "turn:turn.soporgram.com:3478",
+                    "username": "cucaracha",
+                    "credential": "4583013"
+                }*/
+            ]
+        };
+        socket.on("connect", () => {
+            console.log('Conectado al servidor de CD');
+            socket.emit("unirseViewer","new");
+        });
+        socket.on("addNewStream", (idStreamer) => {
+            console.log("addNewStream de streamer: " + idStreamer);
+            //document.getElementById('videos').innerHTML = "";
+            socket.emit("unirseViewer", idStreamer);
+            //peerConnectionServers[socket.id].close();
+        });
+        socket.on("offerViewer", (idStreamer, description) => {
+            console.log("offerViewer: " + idStreamer)
+            //document.getElementById('videos').innerHTML = "";
+            let peerConnection = new RTCPeerConnection(config);
+
+            peerConnection.setRemoteDescription(description)
+                .then(() => peerConnection.createAnswer())
+                .then(sdp => peerConnection.setLocalDescription(sdp))
+                .then(() => {
+                    socket.emit("answerViewer",idStreamer, peerConnection.localDescription);
+                });
+            peerConnection.oniceconnectionstatechange = event => {
+                console.log("Estado de conexión: " + peerConnection.iceConnectionState);
+                if (peerConnection.iceConnectionState == "closed" || peerConnection.iceConnectionState == "disconnected") {
+                    console.log(peerConnection);
+                    //eliminar elemento de video con id del streamer
+                    /*var videoDom = document.getElementById(idStreamer+peerConnection.idStream);
+                    if(videoDom != null){
+                        videoDom.remove();
+                    }*/
+                    //document.getElementById(idStreamer).remove();
+
+                    console.log("Desconectando del servidor de streaming");
+                    //document.getElementById("video").srcObject = null;
+                    peerConnection.close();
+                    delete peerConnection;
+                    //peerConnectionServers = {};
+                    //delete peerConnectionServers[socket.id];
+                    //document.getElementById('videos').innerHTML = "";
+                }
+
+            };
+            peerConnection.ontrack = event => {
+                
+                console.log('agregando nuevo track');
+                console.log(event.streams[0].id);
+                peerConnection.idStream = event.streams[0].id;
+                //localStream.addTrack(event.streams[0]);
+                //console.log(localStream.addTrack(event.streams));
+                //validar si existe el video con el id del streamer
+                var videoDom = document.getElementById(idStreamer);
+                if(videoDom != null){
+                    videoDom.srcObject = event.streams[0];
+                    return;
+                }
+                var video = document.createElement("video");
+                video.autoplay = true;
+                video.controls = true;
+                video.srcObject = event.streams[0];
+                video.setAttribute("width", "400px");
+                video.setAttribute("height", "400px");
+                video.addEventListener("ended", function () {
+                    console.log("termino el video");
+                    
+                }, false);
+                video.setAttribute("id", idStreamer);
+                document.getElementById("videos").appendChild(video);
+                //document.getElementById("video").srcObject = event.streams[0];
+            };
+            peerConnectionServers[idStreamer] = peerConnection;
+        });
+        socket.on("desconectarStream",(idVideo)=>{
+            console.log("Quitando video: " + idVideo);
+            var videoDom = document.getElementById(idVideo);
+            if(videoDom != null){
+                videoDom.remove();
+            }
+        });
+        socket.on("candidateViewer", (idStreamer, candidate) => {
+            peerConnectionServers[idStreamer].addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error(e));
+        });
+    </script>
+</body>
+
+</html>

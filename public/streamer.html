@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN"
+        crossorigin="anonymous"></script>
+    <style>
+        .overlayText {
+            position: absolute;
+            top: 4rem;
+            z-index: 1;
+        }
+
+        .overlayText2 {
+            position: absolute;
+            top: 4rem;
+            left: 60%;
+            z-index: 2;
+        }
+
+        .overlayText3 {
+            position: absolute;
+            top: 18rem;
+            left: 26%;
+            z-index: 3;
+            height: 13rem;
+            overflow: auto;
+        }
+
+        .topText {
+            color: white;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+
+
+        <div class="container" style="min-width: 100%;">
+            <div class="row justify-content-center">
+
+                <div class="col-sm-8 col-md-6 col-xl-10 text-center">
+                    <h1>streamer</h1>
+                </div>
+                <div class="col-sm-12 col-md-10 col-lg-8 col-xl-6 text-center">
+                    <video id="vdoPlay" width="100%" height="100%" controls autoplay="true"></video>
+                    <div class="overlayText">
+                        <p class="topText" style="text-align: left;margin-bottom: 0px;">ID:<span
+                                id="lblIdSocket"></span></p>
+
+                        <p class="topText" style="text-align: left;margin-bottom: 0px;">Frame Rate:<span
+                                id="lblFps"></span></p>
+                        <p class="topText" style="text-align: left;margin-bottom: 0px;">Height:<span
+                                id="lblHeight"></span></p>
+                        <p class="topText" style="text-align: left;margin-bottom: 0px;">Width:<span
+                                id="lblWidth"></span></p>
+
+
+                    </div>
+                    <div class="overlayText2">
+                        <p class="topText" style="text-align: left;margin-bottom: 0px;"><span id="lblFecha">25/03/2023
+                                10:40am</span></p>
+                    </div>
+
+                </div>
+
+                <div class="col-sm-8 col-md-7">
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-xs-12 col-md-10 col-xl-7 text-center">
+                                <div class="accordion" id="accordionExample">
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="sourceTypeVideo">
+                                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                                data-bs-target="#collapseOne" aria-expanded="true"
+                                                aria-controls="collapseOne">
+                                                Camara y Audio
+                                            </button>
+                                        </h2>
+                                        <div id="collapseOne" class="accordion-collapse collapse show"
+                                            aria-labelledby="sourceTypeVideo" data-bs-parent="#accordionExample">
+                                            <div class="accordion-body">
+                                                <section class="select" style="display: inline-flex;margin-top: 5px;">
+                                                    <label class="form-label" for="audioSource">Audio source: </label>
+                                                    <select style="width: 20rem;margin-left: 15px;" class="form-select"
+                                                        id="audioSource"></select>
+                                                </section>
+                                                <section class="select" style="display: inline-flex;margin-top: 5px;">
+                                                    <label class="form-label" for="videoSource">Video source: </label>
+                                                    <select style="width: 20rem;margin-left: 15px;" class="form-select"
+                                                        id="videoSource"></select>
+                                                </section>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="sourceTypeIpCamera">
+                                            <button class="accordion-button collapsed" type="button"
+                                                data-bs-toggle="collapse" data-bs-target="#collapseTwo"
+                                                aria-expanded="false" aria-controls="collapseTwo">
+                                                IP Camera
+                                            </button>
+                                        </h2>
+                                        <div id="collapseTwo" class="accordion-collapse collapse"
+                                            aria-labelledby="sourceTypeIpCamera" data-bs-parent="#accordionExample">
+                                            <div class="accordion-body">
+                                                <div class="mb-3">
+                                                    <label for="basic-url" class="form-label">STREAM IP CAMERA
+                                                        URL</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text" id="basic-addon3">rtsp://</span>
+                                                        <input type="text" class="form-control" id="basic-url"
+                                                            aria-describedby="basic-addon3">
+                                                    </div>
+                                                    <div class="form-text">rtsp://ip-addres:port/h264_pcm.sdp</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                            <div class="col-md-2 col-xxl-3 ">
+                                <button class="btn btn-success" id="btnTransmitir" data-estado="true">Transmitir
+                                    video</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-sm-10 col-md-8 col-xl-6 text-center">
+                    <div class="card" style="margin-top: 5px;">
+                        <div class="card-body">
+                            Tus Mensajes apareceran aqui
+                        </div>
+                    </div>
+                    <div class="mb-3 ">
+                        <label for="txtMensaje" class="form-label">Escribe</label>
+                        <textarea class="form-control" id="txtMensaje" rows="3"></textarea>
+                    </div>
+                    <!--<input type="text" id="txtMensaje" placeholder="Escribe un mensaje" />-->
+                    <button class="btn btn-success" id="btnEnviar">Enviar mensaje</button>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+        document.getElementById('btnEnviar').addEventListener('click', () => {
+            var mensaje = document.getElementById('txtMensaje').value;
+            for (var i = 0; i < dataChannels.length; i++) {
+                console.log(dataChannels[i]);
+                dataChannels[i].send(mensaje);
+            }
+            document.getElementById('txtMensaje').value = '';
+        });
+
+        
+
+        var socket = io.connect(window.location.origin);
+        socket.on("connect", () => {
+            //socket.emit("watcher")
+
+            console.log('Conectado al servidor de CD');
+            /*var idElement = document.getElementById('lblIdSocket');
+            idElement.innerText = socket.id;
+            socket.emit("conectar",'streamer');*/
+            socket.emit("unirseStreamer");
+        });
+        var peerConnectionServer = null;
+        const config = {
+            iceServers: [
+                {
+                    "urls": "stun:stun.l.google.com:19302",
+                },
+                /*{
+                    "urls": "turn:turn.soporgram.com:3478",
+                    "username": "cucaracha",
+                    "credential": "4583013"
+                }*/
+            ]
+        };
+        
+        // Get camera and microphone
+        const videoElement = document.querySelector("video");
+        const audioSelect = document.querySelector("select#audioSource");
+        const videoSelect = document.querySelector("select#videoSource");
+        audioSelect.onchange = () => {
+            //streamLocal.getTracks().forEach(track => track.stop());
+            //peerConnectionServer.close();
+            socket.emit("desconectarStreamer");
+            //peerConnectionServer = null;
+            //dataChannel = null;
+            //streamLocal = null;
+            /*const audioSource = audioSelect.value;
+            const videoSource = videoSelect.value;
+            const constraints = {
+                audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+                video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+            };
+            navigator.mediaDevices
+                .getUserMedia(constraints)
+                .then(stream => {
+                    streamLocal = stream;
+                    streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
+
+                })*/
+            //socket.emit("conectar", 'streamer');
+        };
+        videoSelect.onchange = () => {
+            //streamLocal.getTracks().forEach(track => track.stop());
+            //peerConnectionServer.close();
+            socket.emit("desconectarStreamer");
+            peerConnectionServer = new RTCPeerConnection(config);
+            dataChannel = peerConnectionServer.createDataChannel("chat");
+            dataChannel.addEventListener('open', event => {
+                console.log('DataChannel "' + dataChannel.label + '" esta abierto');
+            });
+            peerConnectionServer.onicecandidate = event => {
+
+                if (event.candidate) {
+
+                    socket.emit("candidate", "streamer", event.candidate);
+                }
+            };
+            const audioSource = audioSelect.value;
+            const videoSource = videoSelect.value;
+            const constraints = {
+                audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+                video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+            };
+            console.log("Obteniendo stream");
+            navigator.mediaDevices
+                .getUserMedia(constraints)
+                .then(stream => {
+                    streamLocal = stream;
+                    streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
+
+                })
+                .then(() => {
+                    peerConnectionServer
+                        .createOffer()
+                        .then(sdp => peerConnectionServer.setLocalDescription(sdp))
+                        .then(() => {
+                            socket.emit("offer", "streamer", peerConnectionServer.localDescription);
+                        });
+                })
+                .catch(handleError);
+           // peerConnectionServer = null;
+            //dataChannel = null;
+            //streamLocal = null;
+            /*const audioSource = audioSelect.value;
+            const videoSource = videoSelect.value;
+            const constraints = {
+                audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+                video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+            };
+            navigator.mediaDevices
+                .getUserMedia(constraints)
+                .then(stream => {
+                    streamLocal = stream;
+                    streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
+
+                })*/
+            //socket.emit("conectar", 'streamer');
+        };
+        function getDevices() {
+
+            return navigator.mediaDevices.enumerateDevices();
+        }
+
+        function gotDevices(deviceInfos) {
+
+
+            flagDevice = true;
+            window.deviceInfos = deviceInfos;
+            for (const deviceInfo of deviceInfos) {
+                const option = document.createElement("option");
+                option.value = deviceInfo.deviceId;
+                if (deviceInfo.kind === "audioinput") {
+                    option.text = deviceInfo.label || `Microphone ${audioSelect.length + 1}`;
+                    audioSelect.appendChild(option);
+                } else if (deviceInfo.kind === "videoinput") {
+                    option.text = deviceInfo.label || `Camera ${videoSelect.length + 1}`;
+                    videoSelect.appendChild(option);
+                }
+            }
+        }
+        const displayMediaOptions = {
+            video: {
+                cursor: "always"
+            },
+            audio: true
+        };
+        var streamLocal = null;
+        var streamers = [];
+        var dataChannel;
+        window.onload = (e) => {
+            console.log("window loaded");
+            getDevices().then(gotDevices);
+            peerConnectionServer = new RTCPeerConnection(config);
+            dataChannel = peerConnectionServer.createDataChannel("chat");
+            dataChannel.addEventListener('open', event => {
+                console.log('DataChannel "' + dataChannel.label + '" esta abierto');
+            });
+            peerConnectionServer.onicecandidate = event => {
+
+                if (event.candidate) {
+
+                    socket.emit("candidate", "streamer", event.candidate);
+                }
+            };
+
+            /*navigator.mediaDevices.getDisplayMedia(displayMediaOptions)
+                .then(stream => {
+                    streamLocal = stream;
+                    streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
+
+                })
+                .then(() => {
+                    peerConnectionServer
+                        .createOffer()
+                        .then(sdp => peerConnectionServer.setLocalDescription(sdp))
+                        .then(() => {
+                            socket.emit("offer", "streamer", peerConnectionServer.localDescription);
+                        });
+                })
+            */
+            const audioSource = audioSelect.value;
+            const videoSource = videoSelect.value;
+            const constraints = {
+                audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+                video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+            };
+            console.log("Obteniendo stream");
+            navigator.mediaDevices
+                .getUserMedia(constraints)
+                .then(stream => {
+                    streamLocal = stream;
+                    streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
+
+                })
+                .then(() => {
+                    peerConnectionServer
+                        .createOffer()
+                        .then(sdp => peerConnectionServer.setLocalDescription(sdp))
+                        .then(() => {
+                            socket.emit("offer", "streamer", peerConnectionServer.localDescription);
+                        });
+                })
+                .catch(handleError);
+
+
+        }
+        function handleError(error) {
+            console.error("Error: ", error);
+        }
+        socket.on("answer", (description) => {
+
+            peerConnectionServer.setRemoteDescription(description);
+        });
+    </script>
+</body>
+
+</html>
