@@ -23,14 +23,14 @@ var peerConnectionViewers = {};
 
 const config = {
     iceServers: [
-        {
+        /*{
             "urls": "stun:stun.l.google.com:19302",
-        }
-        /*{ 
+        }*/
+        { 
             "urls": "turn:turn.soporgram.com:3478",
             "username": "cucaracha",
             "credential": "4583013"
-        }*/
+        }
     ]
 };
 let viewers = [];
@@ -52,32 +52,91 @@ function getStreamer(id, stream) {
 };
 io.sockets.on("error", e => console.log(e));
 io.sockets.on("connection", socket => {
-
+    
     socket.on("unirseStreamer", () => {
+        if (viewers.length > 0) {
+            io.to(socket.id).emit("statusStream", true);
+        }
+        else {
+            io.to(socket.id).emit("statusStream", false);
+        }
+        console.log("Streamer conectado: " + socket.id);
         for (let i = 0; i < streamers.length; i++) {
             if (streamers[i] == socket.id) {
                 return;
             }
         }
         streamers.push(socket.id);
-        console.log("Streamer conectado: " + socket.id);
+        
+
     });
-    socket.on("answerViewer", (idStreamer,description) => {
-        console.log("Recibiendo answer de: " + idStreamer+socket.id );
-        peerConnectionViewers[idStreamer+socket.id].setRemoteDescription(description);
+    socket.on("answerViewer", (idStreamer, description) => {
+        console.log("Recibiendo answer de: " + idStreamer + socket.id);
+        peerConnectionViewers[idStreamer + socket.id].setRemoteDescription(description);
     });
-    socket.on("unirseViewer", (idStreamer) => {
+    function esperarConexion(segundos,streamerId){
+        setTimeout(() => {
+            console.log("Esperando conexion");
+            io.to(streamerId).emit("statusStream", true);
+        }, segundos);
+    }
+    socket.on("IniciarViewer",()=>{
+        console.log("Viewer conectado: " + socket.id);
         for (let i = 0; i < viewers.length; i++) {
             if (viewers[i] == socket.id) {
                 return;
             }
         }
         viewers.push(socket.id);
-        console.log("Viewer conectado: " + socket.id);
-        console.log(streams.length);
-        if (streams.length == 0) {
-            return;
+        console.log("Streamers online: "+ streamers.length);
+        console.log("Viewers online: "+ viewers.length);
+        if(viewers.length==1){
+            var segundos = 1000;
+            for(let i=0;i<streamers.length;i++){
+                esperarConexion(segundos,streamers[i]);
+                segundos = segundos + 1000;
+            }
+            
         }
+        else{
+            for (let i = 0; i < streams.length; i++) {
+                console.log("Creando conexion con: " + socket.id)
+                conectarViewer(socket.id, streams[i]);
+            }
+        }
+    });
+    socket.on("unirseViewer", (idStreamer) => {
+        
+
+        if (idStreamer == "new") {
+            for (let i = 0; i < streams.length; i++) {
+                conectarViewer(socket.id, streams[i]);
+            }
+        }
+        else {
+            console.log("Creando conexion con: " + socket.id);
+            console.log("Streamer id: " + idStreamer);
+            console.log("Streams: " + streams.length);
+            for(let i=0;i<streams.length;i++){
+                console.log(streams[i].id);
+            }
+            for (let i = 0; i < streams.length; i++) {
+                if (streams[i].id == idStreamer) {
+                    conectarViewer(socket.id, streams[i]);
+                }
+            }
+        }
+        
+        /*if(viewers.length==1){
+            for(let i=0;i<streamers.length;i++){
+                io.to(streamers[i]).emit("statusStream", true);
+                
+            }
+        }*/
+        console.log("Streamers online: "+ streamers.length);
+        /*if (streams.length == 0) {
+            return;
+        }*/
         /*var peerConnection = new webrtc.RTCPeerConnection(config);
         for (let i = 0; i < streams.length; i++) {
             streams[i].stream.getTracks().forEach(track => peerConnection.addTrack(track, streams[i].stream));
@@ -97,21 +156,10 @@ io.sockets.on("connection", socket => {
             });
         peerConnectionViewers[socket.id] = peerConnection;
             */
-        if(idStreamer == "new"){
-            for (let i = 0; i < streams.length; i++) {
-                conectarViewer(socket.id,streams[i]);
-            }
-        }
-        else{
-            for (let i = 0; i < streams.length; i++) {
-                if(streams[i].id == idStreamer){
-                    conectarViewer(socket.id,streams[i]);
-                }
-            }
-        }
+
 
     });
-    function conectarViewer(viewId,stream) {
+    function conectarViewer(viewId, stream) {
         console.log(stream);
         var peerConnection = new webrtc.RTCPeerConnection(config);
         stream.stream.getTracks().forEach(track => peerConnection.addTrack(track, stream.stream));
@@ -129,7 +177,7 @@ io.sockets.on("connection", socket => {
                 console.log("enviando offer a: " + viewId + " de: " + stream.id + "")
                 io.to(viewId).emit("offerViewer", stream.id, peerConnection.localDescription);
             });
-        peerConnectionViewers[stream.id+viewId] = peerConnection;
+        peerConnectionViewers[stream.id + viewId] = peerConnection;
     }
     socket.on("candidate", (tipo, candidate) => {
 
@@ -140,17 +188,20 @@ io.sockets.on("connection", socket => {
         console.log("Desconectando streamer: " + socket.id);
         for (let i = 0; i < viewers.length; i++) {
             console.log("cerrando conexión con: " + socket.id + viewers[i]);
-          
-            peerConnectionViewers[socket.id+viewers[i]].close();
+
+            peerConnectionViewers[socket.id + viewers[i]].close();
             //delete peerConnectionViewers[socket.id+viewers[i]];
         }
         for (let i = 0; i < streams.length; i++) {
-            if(streams[i].id == socket.id){
-                streams.splice(i,1);
+            if (streams[i].id == socket.id) {
+                streams.splice(i, 1);
             }
         }
-        peerConnectionStreamers[socket.id].close();
-        delete peerConnectionStreamers[socket.id];
+        if(peerConnectionStreamers[socket.id]!=null){
+            peerConnectionStreamers[socket.id].close();
+            delete peerConnectionStreamers[socket.id];
+        }
+        
     });
     socket.on("offer", (tipo, description) => {
         let peerConnection = new webrtc.RTCPeerConnection(config);
@@ -170,20 +221,20 @@ io.sockets.on("connection", socket => {
             });
         peerConnection.oniceconnectionstatechange = event => {
             console.log("Estado de conexión: " + peerConnection.iceConnectionState);
-            
+
             if (peerConnection.iceConnectionState == "closed") {
                 console.log(viewers.length);
-                
+
                 //localStream = new webrtc.MediaStream();
             }
             else if (peerConnection.iceConnectionState == "connected") {
                 streams.push(getStreamer(socket.id, localStream));
                 localStream = new webrtc.MediaStream();
-                
+
                 //peerConnectionViewers = {};
                 for (let i = 0; i < viewers.length; i++) {
                     console.log("Enviando addNewStream: " + viewers[i]);
-                    io.to(viewers[i]).emit("addNewStream",socket.id);
+                    io.to(viewers[i]).emit("addNewStream", socket.id);
                     /*peerConnectionTemp = new webrtc.RTCPeerConnection(config);
                     for(let i = 0;i < streams.length;i++){
                         streams[i].stream.getTracks().forEach(track => peerConnectionTemp.addTrack(track, streams[i].stream));
@@ -206,7 +257,7 @@ io.sockets.on("connection", socket => {
 
 
                 }
-                viewers = [];
+                //viewers = [];
 
             }
 
@@ -232,10 +283,12 @@ io.sockets.on("connection", socket => {
         for (let i = 0; i < streamers.length; i++) {
             if (streamers[i] == socket.id) {
                 for (let i = 0; i < viewers.length; i++) {
-                    console.log("cerrando conexión con: " + socket.id + viewers[i]);
-                    console.log(peerConnectionViewers[socket.id + viewers[i]]);
-                    peerConnectionViewers[socket.id+viewers[i]].close();
-                    //delete peerConnectionViewers[socket.id+viewers[i]];
+                    if (peerConnectionViewers[socket.id + viewers[i]] != null) {
+                        console.log("cerrando conexión con: " + socket.id + viewers[i]);
+                        console.log(peerConnectionViewers[socket.id + viewers[i]]);
+                        peerConnectionViewers[socket.id + viewers[i]].close();
+                        //delete peerConnectionViewers[socket.id+viewers[i]];
+                    }
                 }
                 if (peerConnectionStreamers[socket.id] != null) {
                     peerConnectionStreamers[socket.id].close();
@@ -257,6 +310,8 @@ io.sockets.on("connection", socket => {
                 return;
             }
         }
+
+
         for (let i = 0; i < viewers.length; i++) {
             if (viewers[i] == socket.id) {
                 if (peerConnectionViewers[socket.id] != null) {
@@ -265,8 +320,11 @@ io.sockets.on("connection", socket => {
 
                 viewers.splice(i, 1);
                 console.log("Viewer desconectado: " + socket.id);
-                return;
+
             }
+        }
+        if (viewers.length == 0) {
+            io.emit("statusStream", false);
         }
     });
 });

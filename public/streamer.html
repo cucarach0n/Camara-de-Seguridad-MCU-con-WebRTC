@@ -159,6 +159,7 @@
     </div>
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript">
+        var startStream = false;
         document.getElementById('btnEnviar').addEventListener('click', () => {
             var mensaje = document.getElementById('txtMensaje').value;
             for (var i = 0; i < dataChannels.length; i++) {
@@ -168,38 +169,30 @@
             document.getElementById('txtMensaje').value = '';
         });
 
-        
+
 
         var socket = io.connect(window.location.origin);
-        socket.on("connect", () => {
-            //socket.emit("watcher")
 
-            console.log('Conectado al servidor de CD');
-            /*var idElement = document.getElementById('lblIdSocket');
-            idElement.innerText = socket.id;
-            socket.emit("conectar",'streamer');*/
-            socket.emit("unirseStreamer");
-        });
         var peerConnectionServer = null;
         const config = {
             iceServers: [
-                {
-                    "urls": "stun:stun.l.google.com:19302",
-                },
                 /*{
+                    "urls": "stun:stun.l.google.com:19302",
+                },*/
+                {
                     "urls": "turn:turn.soporgram.com:3478",
                     "username": "cucaracha",
                     "credential": "4583013"
-                }*/
+                }
             ]
         };
-        
+
         // Get camera and microphone
         const videoElement = document.querySelector("video");
         const audioSelect = document.querySelector("select#audioSource");
         const videoSelect = document.querySelector("select#videoSource");
         audioSelect.onchange = () => {
-            //streamLocal.getTracks().forEach(track => track.stop());
+            streamLocal.getTracks().forEach(track => track.stop());
             //peerConnectionServer.close();
             socket.emit("desconectarStreamer");
             //peerConnectionServer = null;
@@ -224,7 +217,8 @@
             //streamLocal.getTracks().forEach(track => track.stop());
             //peerConnectionServer.close();
             socket.emit("desconectarStreamer");
-            peerConnectionServer = new RTCPeerConnection(config);
+            socket.emit("unirseStreamer");
+            /*peerConnectionServer = new RTCPeerConnection(config);
             dataChannel = peerConnectionServer.createDataChannel("chat");
             dataChannel.addEventListener('open', event => {
                 console.log('DataChannel "' + dataChannel.label + '" esta abierto');
@@ -258,8 +252,8 @@
                             socket.emit("offer", "streamer", peerConnectionServer.localDescription);
                         });
                 })
-                .catch(handleError);
-           // peerConnectionServer = null;
+                .catch(handleError);*/
+            // peerConnectionServer = null;
             //dataChannel = null;
             //streamLocal = null;
             /*const audioSource = audioSelect.value;
@@ -310,58 +304,77 @@
         var dataChannel;
         window.onload = (e) => {
             console.log("window loaded");
+            setInterval(function(){
+                var fecha = new Date();
+                document.getElementById('lblFecha').innerHTML = fecha.toLocaleDateString() + " " + fecha.toLocaleTimeString();
+            },1000);
             getDevices().then(gotDevices);
-            peerConnectionServer = new RTCPeerConnection(config);
-            dataChannel = peerConnectionServer.createDataChannel("chat");
-            dataChannel.addEventListener('open', event => {
-                console.log('DataChannel "' + dataChannel.label + '" esta abierto');
+            socket.on("connect", () => {
+                //socket.emit("watcher")
+
+                console.log('Conectado al servidor de CD');
+                /*var idElement = document.getElementById('lblIdSocket');
+                idElement.innerText = socket.id;
+                socket.emit("conectar",'streamer');*/
+                socket.emit("unirseStreamer");
             });
-            peerConnectionServer.onicecandidate = event => {
-
-                if (event.candidate) {
-
-                    socket.emit("candidate", "streamer", event.candidate);
+            socket.on("statusStream", (statusStream) => {
+                console.log(statusStream);
+                startStream = statusStream;
+                if(streamLocal != null){
+                    streamLocal.getTracks().forEach(track => track.stop());
                 }
-            };
+                
+                if (startStream) {
+                    peerConnectionServer = new RTCPeerConnection(config);
+                    dataChannel = peerConnectionServer.createDataChannel("chat");
+                    dataChannel.addEventListener('open', event => {
+                        console.log('DataChannel "' + dataChannel.label + '" esta abierto');
+                    });
+                    peerConnectionServer.onicecandidate = event => {
 
-            /*navigator.mediaDevices.getDisplayMedia(displayMediaOptions)
-                .then(stream => {
-                    streamLocal = stream;
-                    streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
+                        if (event.candidate) {
 
-                })
-                .then(() => {
-                    peerConnectionServer
-                        .createOffer()
-                        .then(sdp => peerConnectionServer.setLocalDescription(sdp))
+                            socket.emit("candidate", "streamer", event.candidate);
+                        }
+                    };
+                    console.log("Iniciar stream: " + startStream);
+                    const audioSource = audioSelect.value;
+                    const videoSource = videoSelect.value;
+                    const constraints = {
+                        audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+                        video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+                    };
+                    console.log("Obteniendo stream");
+                    navigator.mediaDevices
+                        .getUserMedia(constraints)
+                        .then(stream => {
+                            streamLocal = stream;
+                            streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
+
+                        })
                         .then(() => {
-                            socket.emit("offer", "streamer", peerConnectionServer.localDescription);
-                        });
-                })
-            */
-            const audioSource = audioSelect.value;
-            const videoSource = videoSelect.value;
-            const constraints = {
-                audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
-                video: { deviceId: videoSource ? { exact: videoSource } : undefined }
-            };
-            console.log("Obteniendo stream");
-            navigator.mediaDevices
-                .getUserMedia(constraints)
-                .then(stream => {
-                    streamLocal = stream;
-                    streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
+                            peerConnectionServer
+                                .createOffer()
+                                .then(sdp => peerConnectionServer.setLocalDescription(sdp))
+                                .then(() => {
+                                    socket.emit("offer", "streamer", peerConnectionServer.localDescription);
+                                });
+                        })
+                        .catch(handleError);
+                }
+                else{
+                    
+                    if(peerConnectionServer){
+                        console.log("Cerrando stream");
+                        socket.emit("desconectarStreamer");
+                        peerConnectionServer.close();
+                        
+                        
+                    }
+                }
+            });
 
-                })
-                .then(() => {
-                    peerConnectionServer
-                        .createOffer()
-                        .then(sdp => peerConnectionServer.setLocalDescription(sdp))
-                        .then(() => {
-                            socket.emit("offer", "streamer", peerConnectionServer.localDescription);
-                        });
-                })
-                .catch(handleError);
 
 
         }
