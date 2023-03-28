@@ -20,19 +20,20 @@
         var peerConnectionServers = {};
         const config = {
             iceServers: [
-                {
+                /*{
                     "urls": "stun:stun.l.google.com:19302",
-                }
-                /*{ 
+                }*/
+                { 
                     "urls": "turn:turn.soporgram.com:3478",
                     "username": "cucaracha",
                     "credential": "4583013"
-                }*/
+                }
             ]
         };
         socket.on("connect", () => {
             console.log('Conectado al servidor de CD');
-            socket.emit("unirseViewer","new");
+            //socket.emit("unirseViewer","new");
+            socket.emit("IniciarViewer");
         });
         socket.on("addNewStream", (idStreamer) => {
             console.log("addNewStream de streamer: " + idStreamer);
@@ -75,7 +76,7 @@
             peerConnection.ontrack = event => {
                 
                 console.log('agregando nuevo track');
-                console.log(event.streams[0].id);
+                console.log(idStreamer);
                 peerConnection.idStream = event.streams[0].id;
                 //localStream.addTrack(event.streams[0]);
                 //console.log(localStream.addTrack(event.streams));
