@@ -1,5 +1,8 @@
 const express = require("express");
 const webrtc = require('wrtc');
+const fs = require('fs');
+const spawn = require('child_process').spawn;
+const path = require('path');
 const { PassThrough } = require('stream')
 const { RTCAudioSink, RTCVideoSink } = require('wrtc').nonstandard;
 
@@ -21,6 +24,8 @@ var videoTrack;
 var peerConnectionStreamers = {};
 var peerConnectionViewers = {};
 
+var buffer = new Buffer(0), j = 0;
+var recordStreamFISICO = null;
 const config = {
     iceServers: [
         /*{
@@ -38,6 +43,7 @@ let streamers = [];
 var localStream = new webrtc.MediaStream();
 var streams = [];
 var views = [];
+var videoGrabado=null;
 function getView(streamer, viewer) {
     return {
         streamer: streamer,
@@ -50,6 +56,37 @@ function getStreamer(id, stream) {
         stream: stream
     }
 };
+
+function recordStream(stream, outputFilePath) {
+    // Crea un proceso de ffmpeg con la entrada de video y audio del MediaStream
+    const ffmpegProcess = spawn('ffmpeg', [
+      '-f', 'webm',
+      '-i', 'pipe:0',
+      '-vcodec', 'copy',
+      '-acodec', 'copy',
+      path.resolve(outputFilePath)
+    ], {
+      stdio: ['pipe', 'ignore', 'inherit']
+    });
+  
+    // Redirige el flujo de entrada del MediaStream al proceso de ffmpeg
+    stream.pipe(ffmpegProcess.stdin);
+  
+    // Retorna una promesa que se resuelve cuando ffmpeg termina de grabar
+    return new Promise((resolve, reject) => {
+      ffmpegProcess.on('exit', (code, signal) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`ffmpeg salió con un código de error: ${code}`));
+        }
+      });
+      ffmpegProcess.on('error', (error) => {
+        reject(new Error(`Error en ffmpeg: ${error.message}`));
+      });
+    });
+  }
+
 io.sockets.on("error", e => console.log(e));
 io.sockets.on("connection", socket => {
     
@@ -229,6 +266,34 @@ io.sockets.on("connection", socket => {
             }
             else if (peerConnection.iceConnectionState == "connected") {
                 streams.push(getStreamer(socket.id, localStream));
+                /*console.log(videoGrabado);
+                console.log(webrtc);
+                for(let i =0; i< streams.length;i++){
+                    console.log(streams[i].id);
+                    if(recordStreamFISICO==null){
+                        recordStream = new MediaRecorder(streams[i].stream);
+                        recordStream.ondataavailable = event => {
+                            console.log("Grabando");
+                            console.log('----- Captured from the FaceTime camera. size=' + buf.length);
+                            buffer = Buffer.concat([buffer, buf]);
+                            if (buffer.length > 64000) {
+                            fs.writeFile(`./file-${j++}.mp4`, buffer, (e) => {
+                                console.log('\tfile written. size=' + buffer.length);
+                                buffer = new Buffer(0);
+                            });
+                            }
+                        };
+                        recordStream.start();
+                        recordStreamFISICO = recordStream(streams[i].stream,"./file-"+i+".mp4").then(() => {
+                            console.log('La grabación se ha completado');
+                          }).catch((error) => {
+                            console.error('Error durante la grabación:', error);
+                          });
+                        
+                    }
+
+                    break;
+                }*/
                 localStream = new webrtc.MediaStream();
 
                 //peerConnectionViewers = {};

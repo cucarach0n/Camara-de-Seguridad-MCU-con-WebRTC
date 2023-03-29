@@ -52,7 +52,7 @@
                     <h1>streamer</h1>
                 </div>
                 <div class="col-sm-12 col-md-10 col-lg-8 col-xl-6 text-center">
-                    <video id="vdoPlay" width="100%" height="100%" controls autoplay="true"></video>
+                    <video id="vdoPlay" style="width: 100%;height: 100%;" controls autoplay="true"></video> 
                     <div class="overlayText">
                         <p class="topText" style="text-align: left;margin-bottom: 0px;">ID:<span
                                 id="lblIdSocket"></span></p>
@@ -73,7 +73,7 @@
 
                 </div>
 
-                <div class="col-sm-8 col-md-7">
+                <div class="col-10">
                     <div class="container">
                         <div class="row justify-content-center">
                             <div class="col-xs-12 col-md-10 col-xl-7 text-center">
@@ -91,12 +91,12 @@
                                             <div class="accordion-body">
                                                 <section class="select" style="display: inline-flex;margin-top: 5px;">
                                                     <label class="form-label" for="audioSource">Audio source: </label>
-                                                    <select style="width: 20rem;margin-left: 15px;" class="form-select"
+                                                    <select style="margin-left: 15px;" class="form-select"
                                                         id="audioSource"></select>
                                                 </section>
                                                 <section class="select" style="display: inline-flex;margin-top: 5px;">
                                                     <label class="form-label" for="videoSource">Video source: </label>
-                                                    <select style="width: 20rem;margin-left: 15px;" class="form-select"
+                                                    <select style="margin-left: 15px;" class="form-select"
                                                         id="videoSource"></select>
                                                 </section>
                                             </div>
@@ -130,7 +130,7 @@
 
 
                             </div>
-                            <div class="col-md-2 col-xxl-3 ">
+                            <div class="col-md-2 col-lg-1  ">
                                 <button class="btn btn-success" id="btnTransmitir" data-estado="true">Transmitir
                                     video</button>
                             </div>
@@ -139,7 +139,7 @@
 
                 </div>
 
-                <div class="col-sm-10 col-md-8 col-xl-6 text-center">
+                <div class="col-sm-8 col-md-8 col-xl-6 text-center">
                     <div class="card" style="margin-top: 5px;">
                         <div class="card-body">
                             Tus Mensajes apareceran aqui
@@ -316,6 +316,8 @@
                 /*var idElement = document.getElementById('lblIdSocket');
                 idElement.innerText = socket.id;
                 socket.emit("conectar",'streamer');*/
+                var idElement = document.getElementById('lblIdSocket');
+                idElement.innerText = socket.id;
                 socket.emit("unirseStreamer");
             });
             socket.on("statusStream", (statusStream) => {
@@ -343,13 +345,22 @@
                     const videoSource = videoSelect.value;
                     const constraints = {
                         audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
-                        video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+                        video: { deviceId: videoSource ? { exact: videoSource } : undefined,width: { min: 640, ideal: 1920, max: 1920 },
+                                                                                                height: { min: 480, ideal: 1080 }}
+                                                                            
                     };
                     console.log("Obteniendo stream");
                     navigator.mediaDevices
                         .getUserMedia(constraints)
                         .then(stream => {
                             streamLocal = stream;
+                            document.getElementById('lblFps').innerHTML =Math.round(stream.getVideoTracks()[0].getSettings().frameRate)+'fps';
+
+                            document.getElementById('lblHeight').innerHTML = stream.getVideoTracks()[0].getSettings().height;
+                            document.getElementById('lblWidth').innerHTML = stream.getVideoTracks()[0].getSettings().width;
+
+                            document.getElementById("vdoPlay").srcObject = stream;
+
                             streamLocal.getTracks().forEach(track => peerConnectionServer.addTrack(track, streamLocal));
 
                         })
