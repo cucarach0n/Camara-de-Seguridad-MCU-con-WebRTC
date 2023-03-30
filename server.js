@@ -1,31 +1,19 @@
 const express = require("express");
 const webrtc = require('wrtc');
-const fs = require('fs');
-const spawn = require('child_process').spawn;
-const path = require('path');
-const { PassThrough } = require('stream')
-const { RTCAudioSink, RTCVideoSink } = require('wrtc').nonstandard;
-
-const { EventEmitter } = require('events');
-
-const broadcaster = new EventEmitter();
-const { on } = broadcaster;
 
 const app = express();
 const port = 3001;
 const http = require("http");
-const { copyFileSync } = require("fs");
+
 const server = http.createServer(app);
 
 const io = require("socket.io")(server);
 app.use(express.static(__dirname + "/public"));
-var audioTrack;
-var videoTrack;
+
 var peerConnectionStreamers = {};
 var peerConnectionViewers = {};
 
-var buffer = new Buffer(0), j = 0;
-var recordStreamFISICO = null;
+
 const config = {
     iceServers: [
         /*{
@@ -42,8 +30,7 @@ let viewers = [];
 let streamers = [];
 var localStream = new webrtc.MediaStream();
 var streams = [];
-var views = [];
-var videoGrabado=null;
+
 function getView(streamer, viewer) {
     return {
         streamer: streamer,
@@ -57,35 +44,7 @@ function getStreamer(id, stream) {
     }
 };
 
-function recordStream(stream, outputFilePath) {
-    // Crea un proceso de ffmpeg con la entrada de video y audio del MediaStream
-    const ffmpegProcess = spawn('ffmpeg', [
-      '-f', 'webm',
-      '-i', 'pipe:0',
-      '-vcodec', 'copy',
-      '-acodec', 'copy',
-      path.resolve(outputFilePath)
-    ], {
-      stdio: ['pipe', 'ignore', 'inherit']
-    });
-  
-    // Redirige el flujo de entrada del MediaStream al proceso de ffmpeg
-    stream.pipe(ffmpegProcess.stdin);
-  
-    // Retorna una promesa que se resuelve cuando ffmpeg termina de grabar
-    return new Promise((resolve, reject) => {
-      ffmpegProcess.on('exit', (code, signal) => {
-        if (code === 0) {
-          resolve();
-        } else {
-          reject(new Error(`ffmpeg salió con un código de error: ${code}`));
-        }
-      });
-      ffmpegProcess.on('error', (error) => {
-        reject(new Error(`Error en ffmpeg: ${error.message}`));
-      });
-    });
-  }
+
 
 io.sockets.on("error", e => console.log(e));
 io.sockets.on("connection", socket => {
